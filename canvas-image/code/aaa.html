@@ -1,0 +1,320 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=GBK">
+    <title>Saving canvas data to image file</title>
+    <script type="text/javascript">
+
+        function start(canvasID){
+
+            var tScreenLock = new ScreenLock(canvasID);
+            tScreenLock.init(tScreenLock);
+        }
+
+        var ScreenLock = function(canvasID, circleCount, minSelected){
+
+            this.canvasID = canvasID;
+            this.canvas = document.getElementById(this.canvasID);  //关联canvas元素
+            this.context = this.canvas.getContext('2d');  //所关联canvas元素上下文对象
+
+            this.circleCount = (circleCount == undefined ? 3 : circleCount);
+            this.minSelected = (minSelected == undefined ? 4 : minSelected);;
+
+            this.savedGestureString = null;  //是否初始化手势
+            this.mousePressed = false;
+            this.circles = [];
+            this.selectedCircles = [];  //本次滑动的手势
+            this.lastSelectedCircles = [];  //上次滑动的手势
+        }
+        ScreenLock.prototype = {
+
+            init: function(lockObj){
+
+                if(this.canvasID == null){
+
+                    alert("必须传入画图区ID");
+                    return false;
+                }
+
+                this.initButton(lockObj);
+                this.initEvent(lockObj);
+                this.initCircles();
+            },
+
+            initEvent: function(lockObj){
+
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+
+                this.canvas.onmousedown = function(e){
+                    lockObj.dealMousedown(e);
+                }
+                this.canvas.ontouchstart = function(e){
+                    lockObj.dealMousedown(e);
+                }
+
+                this.canvas.onmousemove = function(e){
+                    lockObj.move(e);
+                }
+                this.canvas.ontouchmove = function(e){
+                    lockObj.move(e);
+                }
+
+                this.canvas.onmouseup = function(e){
+                    lockObj.dealMouseup(e);
+                }
+                this.canvas.ontouchend = function(e){
+                    lockObj.dealMouseup(e);
+                }
+            },
+
+            dealMousedown: function(e){
+
+                this.mousePressed = true;
+                this.selectedCircles = [];  //每次滑动之前都先清除上次的手势
+            },
+
+            dealMouseup: function(e){
+
+                this.mousePressed = false;
+                var info = "";
+
+                if(this.savedGestureString == null){
+                    if(this.selectedCircles.length < this.minSelected){
+                        this.selectedCircles = [];
+                        info = "选中节点数不能小于" + this.minSelected;
+                    }
+                    else if(this.lastSelectedCircles.length != 0){
+                        if(this.selectedCircles.length != this.lastSelectedCircles.length){
+                            info = "两次手势不一样，请重试。";
+                            this.lastSelectedCircles = [];
+                        }
+                        else{
+                            for(var i = 0; i < this.selectedCircles.length; i++){
+                                if(!this.selectedCircles[i].equals(this.lastSelectedCircles[i])){
+                                    info = "两次手势不一样，请重试。";
+                                    this.lastSelectedCircles = [];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else{
+                        this.lastSelectedCircles = this.selectedCircles;
+                    }
+                }
+                else{
+                    var str = this.selectedCircles2String();
+                    if(str == this.savedGestureString){
+                        info = "解锁成功。";
+                    }
+                    else{
+                        info = "解锁失败。";
+                    }
+                }
+
+                this.reDraw();  //为去掉最后的直线，需要重画。
+                this.context.strokeText(info, 20,20);
+            },
+
+            initCircles: function(){
+
+                var x = this.canvas.width / (this.circleCount + 1);
+                var y = this.canvas.height / (this.circleCount + 1);
+                var r = Math.min(x, y) / 4;
+
+                for(var i = 1; i <= this.circleCount; i++){
+                    for(var j = 1; j <= this.circleCount; j++){
+                        var circle = new Circle(x * i, y * j, r);
+                        circle.draw(this.context);
+                        this.circles.push(circle);
+                    }
+                }
+            },
+
+            initButton: function(lockObj){
+
+                var canvasParentNode = this.canvas.parentNode;
+                var buttonDiv = document.createElement("div");
+                canvasParentNode.insertBefore(buttonDiv, this.canvas);
+
+                var localStorageItem = "savedGestureString";
+                this.savedGestureString = localStorage.getItem(localStorageItem);  //IE必须发布到应用上访问才能使用localStorage
+                if(this.savedGestureString == null){
+                    var saveButton = document.createElement("input");
+                    saveButton.type = "button";
+                    saveButton.value = "保  存";
+                    saveButton.onclick = function(){
+                        if(confirm("请确保您已记住手势，保存？")){
+                            localStorage.setItem(localStorageItem, lockObj.selectedCircles2String());
+                            location.reload();
+                        }
+                    }
+                    buttonDiv.appendChild(saveButton);
+                }
+
+                var clearButton = document.createElement("input");
+                clearButton.type = "button";
+                clearButton.value = "清除已存手势";
+                clearButton.onclick = function(){
+                    alert("清除已存手势.");
+                    location.reload();
+                    localStorage.removeItem(localStorageItem);
+                }
+                buttonDiv.appendChild(clearButton);
+            },
+
+            selectedCircles2String: function(){
+
+                var str = "";
+                for(var i = 0; i < this.selectedCircles.length; i++){
+                    str = str + this.selectedCircles[i] + ",";
+                }
+
+                return str;
+            },
+
+            move: function(e){
+
+                if(this.mousePressed == false){
+                    return;
+                }
+
+                this.slideOverCircle(e);
+                this.reDraw();
+
+                if(this.selectedCircles.length > 0){
+                    var start = this.selectedCircles[this.selectedCircles.length - 1];
+                    var end = this.getCursorPosition(e);
+                    this.drawLine(start, end);
+                }
+            },
+
+            //若滑过节点，则记录该节点，并画出最近两个节点之间的线段
+            slideOverCircle: function(e){
+
+                var cursorPosition = this.getCursorPosition(e);
+
+                //若该节点已经记录过，则放弃
+                for(var i = 0; i < this.selectedCircles.length; i++){
+                    if(this.selectedCircles[i].contain(cursorPosition.x, cursorPosition.y)){
+                        return;
+                    }
+                }
+
+                for(var i = 0; i < this.circles.length; i++){
+                    if(this.circles[i].contain(cursorPosition.x, cursorPosition.y)){
+                        this.selectedCircles.push(this.circles[i]);
+                    }
+                }
+            },
+
+            drawLine: function(start, end){
+
+                this.context.beginPath();
+                this.context.moveTo(start.x, start.y);
+                this.context.lineTo(end.x, end.y);
+                this.context.stroke();
+            },
+
+            reDraw: function(){
+
+                this.clearCanvas();
+                for(var i = 0; i < this.circles.length; i++){
+                    this.circles[i].draw(this.context);
+                }
+
+                for(var i = 1; i < this.selectedCircles.length; i++){
+                    this.drawLine(this.selectedCircles[i - 1], this.selectedCircles[i]);
+                }
+            },
+
+            getCursorPosition: function(e){
+
+                var point;
+                if(e.type == "touchmove"){  //触屏
+                    e.preventDefault();
+                    var touch = event.targetTouches[0];
+                    var x = touch.pageX - this.canvas.offsetLeft;
+                    var y = touch.pageY - this.canvas.offsetTop;
+                    point = new Point(x, y);
+                }
+                else{  //鼠标
+                    var x = e.clientX - this.canvas.offsetLeft;
+                    var y = e.clientY - this.canvas.offsetTop;
+                    point = new Point(x, y);
+                }
+
+                return point;
+            },
+
+            clearCanvas: function(){
+
+                this.context.fillStyle = "rgb(255,255,255)";
+                this.context.fillRect(0,0,this.canvas.width,this.canvas.height);
+            },
+        }
+
+        var Circle = function(x, y, r, lineWidth){
+
+            this.x = x;
+            this.y = y;
+            this.r = r;
+            this.lineWidth = lineWidth;
+            this.selectFlag;
+        }
+        Circle.prototype = {
+
+            draw: function(ctx){
+
+                if(this.x == null || this.x == undefined
+                        || this.y == null || this.y == undefined){
+                    alert("没有正确的圆心");
+                    return false;
+                }
+                if(this.r == null || this.r == undefined || this.r <= 0){
+                    alert("半径必须大于0");
+                    return false;
+                }
+                ctx.lineWidth = this.lineWidth;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, 2*Math.PI);
+                ctx.stroke();
+            },
+
+            //判断传入的坐标是否在圆内
+            contain: function(x, y){
+
+                return this.x - this.r < x && this.x + this.r > x
+                        && this.y - this.r < y && this.y + this.r > y;
+            },
+
+            //判断两个圆圆心及半径是否相同
+            equals: function(circle){
+
+                return this.x == circle.x && this.y == circle.y && this.r == circle.r;
+            },
+
+            toString: function(){
+
+                return "{" + this.x + "," + this.y + "," + this.r + "}";
+            }
+        }
+
+        var Point = function(x, y){
+
+            this.x = x;
+            this.y = y;
+        }
+
+
+    </script>
+</head>
+
+<body onload="start('thecanvas');">
+<form id="fm" name="fm">
+    <canvas width="200" height="200" style="border:1px solid black;" id="thecanvas"></canvas>
+</form>
+</body>
+</html>
