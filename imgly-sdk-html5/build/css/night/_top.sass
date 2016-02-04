@@ -1,0 +1,91 @@
+/*
+ * Copyright (c) 2013-2015 9elements GmbH
+ *
+ * Released under Attribution-NonCommercial 3.0 Unported
+ * http://creativecommons.org/licenses/by-nc/3.0/
+ *
+ * For commercial use, please contact us at contact@9elements.com
+ */
+
+.imglykit-container
+  .imglykit-top-controls-row
+    display: table-row
+
+  .imglykit-top-controls
+    @include user-select(none)
+    display: table-cell
+    width: 100%
+    height: $topControlsHeight
+    color: white
+    font-family: Helvetica, Arial, sans-serif
+    font-size: 16px
+    padding: 0 20px
+    z-index: 2
+    background: $controlsBackgroundColor
+    > * *
+      display: inline-block
+
+    &, *
+      line-height: $topControlsInnerHeight
+
+    &.imglykit-header-padding
+      top: $headerHeight
+
+  .imglykit-top-controls-left, .imglykit-top-controls-right
+    padding-top: 5px
+
+  .imglykit-top-controls-left
+    float: left
+
+  .imglykit-top-controls-right
+    float: right
+    display: none
+
+    .imglykit-zoom-in, .imglykit-zoom-out
+      padding: 0 15px
+      cursor: pointer
+      border-left: 1px solid $borderColor
+
+      img
+        @include opacity(0.4)
+        vertical-align: middle
+      &:hover img
+        @include opacity(1)
+
+    .imglykit-zoom-out
+      padding-right: 0
+
+    .imglykit-zoom-level
+      @include opacity(0.4)
+      padding: 0 10px
+
+  .imglykit-undo
+    cursor: pointer
+    border-right: 1px solid $borderColor
+    color: rgba(white, 0.4)
+    padding: 0 10px
+    display: none
+    img
+      @include opacity(0.4)
+      margin-right: 5px
+      vertical-align: middle
+
+  .imglykit-export
+    cursor: pointer
+    border-right: 1px solid $borderColor
+    color: rgba(white, 0.4)
+    padding: 0 10px
+    display: none
+    img
+      @include opacity(0.4)
+      margin-right: 5px
+      vertical-align: middle
+
+  .imglykit-new
+    cursor: pointer
+    border-right: 1px solid $borderColor
+    color: rgba(white, 0.4)
+    padding-right: 10px
+    img
+      margin-right: 5px
+      vertical-align: middle

@@ -1,0 +1,89 @@
+/*
+ * Copyright (c) 2013-2015 9elements GmbH
+ *
+ * Released under Attribution-NonCommercial 3.0 Unported
+ * http://creativecommons.org/licenses/by-nc/3.0/
+ *
+ * For commercial use, please contact us at contact@9elements.com
+ */
+
+.imglykit-container
+  .imglykit-color-picker
+    position: relative
+    border-left: 1px solid $borderColor
+    height: $controlsHeight
+
+    .imglykit-color-picker-color
+      @include border-radius(3px)
+      background: black
+      margin-top: 15px
+
+    .imglykit-controls-item-label
+      position: absolute
+      line-height: 11px
+      width: 100%
+      bottom: 10px
+      left: 0
+
+    .imglykit-transparent-knob
+      pointer-events: none
+
+    canvas
+      cursor: pointer
+
+  .imglykit-color-picker-overlay
+    position: absolute
+    cursor: default
+    background: $lightBackgroundColor
+    width: 240px
+    height: 240px
+    padding: 20px
+    z-index: 2
+
+    bottom: $controlsHeight + 35px
+    right: $controlsWidth / 2 - 120px
+
+    @include arrow-lazy($direction: down, $size: 15px, $color: $lightBackgroundColor, $center: 50%, $margin: -1px, $pseudo: before)
+    display: none
+    &.imglykit-visible
+      display: block
+
+    .imglykit-color-picker-alpha-container
+      width: 200px
+      height: 30px
+      position: relative
+      margin-bottom: 10px
+      canvas
+        background: black
+        position: absolute
+        left: 0
+        top: 0
+
+      .imglykit-transparent-knob
+        top: 50%
+
+    .imglykit-color-picker-hue-container
+      width: 30px
+      height: 160px
+      position: relative
+      float: left
+      canvas
+        background: black
+        position: absolute
+        top: 0
+        left: 0
+
+      .imglykit-transparent-knob
+        left: 50%
+
+    .imglykit-color-picker-saturation-container
+      width: 160px
+      height: 160px
+      position: relative
+      float: left
+      margin-right: 10px
+      canvas
+        background: black
+        position: absolute
+        top: 0
+        left: 0
